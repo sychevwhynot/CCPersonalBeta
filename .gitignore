@@ -1,0 +1,13 @@
+# Ignore media files
+media/
+
+# Ignore static files
+static/
+
+# Ignore settings file (assuming it's named settings.py)
+settings.py
+
+# Ignore database file (assuming it's named db.sqlite3)
+db.sqlite3
+
+venv/
