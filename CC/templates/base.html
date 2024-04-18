@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}{% endblock %}</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f3f3f3;
+        }
+        .header {
+            background-color: #ffd700;
+            color: #000;
+            padding: 20px;
+            text-align: center;
+        }
+        .header h1 {
+            margin: 0;
+        }
+        .logout-button {
+            background-color: #000;
+            color: #fff;
+            padding: 8px 16px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: bold;
+            transition: background-color 0.3s;
+            position: absolute;
+            top: 20px;
+            right: 20px;
+        }
+        .logout-button:hover {
+            background-color: #333;
+        }
+        .sidebar-left, .sidebar-right {
+            position: fixed;
+            width: 200px;
+            background-color: #fff;
+            border-right: 1px solid #ccc;
+            height: 100vh;
+        }
+        .sidebar-left {
+            left: 0;
+        }
+        .sidebar-right {
+            right: 0;
+        }
+        .sidebar ul {
+            list-style-type: none;
+            padding: 0;
+        }
+        .sidebar ul li {
+            padding: 10px;
+            border-bottom: 1px solid #ccc;
+            cursor: pointer;
+        }
+        .sidebar ul li:hover {
+            background-color: #f9f9f9;
+        }
+        .sidebar ul li a {
+            text-decoration: none;
+            color: black;
+        }
+        .content {
+            margin-left: 220px;
+            margin-right: 220px; /* Добавлено для правого блока */
+            padding: 20px;
+            margin-bottom: 100px; /* Добавлено для отступа снизу */
+        }
+        .footer {
+            text-align: center;
+            background-color: #ffd700;
+            color: #000;
+            padding: 20px;
+            position: fixed;
+            left: 0;
+            bottom: 0;
+            width: 100%;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>CoffeeCultPersonal</h1>
+        <form id="logout-form" method="post" action="/logout/">
+            {% csrf_token %}
+            <button type="submit" class="logout-button">Выйти</button>
+        </form>
+    </div>
+    <div class="sidebar sidebar-left">
+        <ul>
+            <li>Профиль</li>
+            <li><a href="/feed">Лента</a></li>
+            <li>Мессенджер</li>
+            <li>Таски</li>
+            <li>База знаний</li>
+        </ul>
+    </div>
+    <div class="sidebar sidebar-right">
+        <!-- Ваш контент для правого блока здесь -->
+        <ul>
+            <li>Профиль</li>
+            <li><a href="/feed">Лента</a></li>
+            <li>Мессенджер</li>
+            <li>Таски</li>
+            <li>База знаний</li>
+        </ul>
+    </div>
+    <div class="content">
+        {% block content %}{% endblock %}
+    </div>
+    <div class="footer">
+        <p>КофеКульт</p>
+    </div>
+</body>
+</html>

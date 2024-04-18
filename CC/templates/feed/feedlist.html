@@ -1,0 +1,193 @@
+{% extends 'base.html' %}
+{% block content %}
+    <div style="text-align: center;">
+        {% if user.is_authenticated and user.is_staff %}
+        <h1>Создать новую запись</h1>
+        <form id="create-feed-form" method="post" enctype="multipart/form-data" action="{% url 'feed:create_feed' %}" style="display: inline-block;">
+            {% csrf_token %}
+            <label for="id_title">Заголовок:</label><br>
+            <input type="text" id="id_title" name="title" maxlength="255" required style="width: 300px; border-radius: 8px;"><br><br>
+            <label for="id_content">Содержание:</label><br>
+            <textarea id="id_content" name="content" rows="4" cols="50" required style="width: 300px; border-radius: 8px;"></textarea><br><br>
+            <button type="submit" style="background-color: black; color: white; border-radius: 8px; padding: 10px 20px; border: none;">Опубликовать</button>
+        </form>
+        {% endif %}
+    </div>
+    <h2 style="text-align: center;">Лента записей</h2>
+    {% if feedlist %}
+        {% for feed in feedlist %}
+            <div style="margin: auto; width: 50%; margin-bottom: 50px;">
+                <div style="display: flex; align-items: center;">
+                    <img src="{{ feed.user.avatar.url }}" alt="{{ feed.user.username }}" style="width: 50px; height: 50px; border-radius: 50%; margin-right: 10px;">
+                    <div>
+                        <p style="margin: 0; font-weight: bold;">{{ feed.user.first_name }} {{ feed.user.last_name }} ({{ feed.user.username }})</p>
+                        {% if feed.category %}
+                            <p style="font-weight: 600; margin: 0;">Категория: {{ feed.category.name }}</p>
+                        {% endif %}
+                        <p style="margin: 0;"><em>Опубликовано: {{ feed.time_create }}</em></p>
+                    </div>
+                </div>
+                <div id="feed-{{ feed.pk }}">
+                    <p style="font-weight: bold;">{{ feed.title }}</p>
+                    <p>{{ feed.content }}</p>
+                    {% if user.is_authenticated and user.is_staff or user == feed.user %}
+                    <button type="submit" class="edit-feed-btn" data-feed-id="{{ feed.pk }}" style="background-color: black; color: white; border-radius: 8px; padding: 10px 20px; border: none;">Редактировать</button>
+                    <button class="delete-feed-btn" data-feed-id="{{ feed.pk }}" style="background-color: red; color: white; border-radius: 50%; padding: 5px 10px; border: none;">&#10006;</button>
+                    {% endif %}
+                </div>
+            </div>
+        {% endfor %}
+    {% else %}
+        <p>Нет доступных записей.</p>
+    {% endif %}
+
+    {# Форма редактирования записи #}
+    <div id="edit-feed-form" style="display: none; position: fixed; right: 0; top: 0; width: 300px; height: 100%; background-color: #f0f0f0; padding: 20px; z-index: 100;">
+        <h2>Редактирование записи</h2>
+        <form id="edit-form" method="post" enctype="multipart/form-data">
+            {% csrf_token %}
+            <input type="hidden" id="edit-feed-id" name="feed_id">
+            <label for="edit-title">Новый заголовок:</label><br>
+            <input type="text" id="edit-title" name="title" maxlength="255" required style="width: 100%; border-radius: 8px; margin-bottom: 10px;"><br>
+            <label for="edit-content">Новое содержание:</label><br>
+            <textarea id="edit-content" name="content" rows="4" cols="50" required style="width: 100%; border-radius: 8px; margin-bottom: 10px;"></textarea><br>
+            <button type="submit" style="background-color: black; color: white; border-radius: 8px; padding: 10px 20px; border: none;">Сохранить изменения</button>
+            <button type="button" id="cancel-edit" style="background-color: gray; color: white; border-radius: 8px; padding: 10px 20px; border: none;">Отмена</button>
+        </form>
+    </div>
+
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <script>
+        // Создание новой записи через AJAX
+        document.getElementById('create-feed-form').addEventListener('submit', function(event) {
+            event.preventDefault();
+            const form = event.target;
+            const formData = new FormData(form);
+            fetch(form.action, {
+                method: form.method,
+                body: formData,
+                headers: {
+                    'X-CSRFToken': '{{ csrf_token }}',
+                },
+            })
+            .then(response => {
+                if (response.ok) {
+                    return response.json();
+                } else {
+                    throw new Error('Не удалось создать запись.');
+                }
+            })
+            .then(data => {
+                // Обновляем список записей после успешного создания
+                location.reload();
+            })
+            .catch(error => {
+                console.error('Ошибка:', error);
+            });
+        });
+
+        // Показать форму редактирования при нажатии кнопки "Редактировать"
+        document.querySelectorAll('.edit-feed-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const feedId = this.dataset.feedId;
+                document.getElementById('edit-feed-id').value = feedId;
+                // Получаем данные текущей записи
+                fetch(`/feed/${feedId}/edit/`, {
+                    method: 'GET',
+                    headers: {
+                        'X-CSRFToken': '{{ csrf_token }}',
+                    },
+                })
+                .then(response => {
+                    if (response.ok) {
+                        return response.json();
+                    } else {
+                        throw new Error('Не удалось получить данные записи для редактирования.');
+                    }
+                })
+                .then(data => {
+                    // Заполняем форму данными текущей записи
+                    document.getElementById('edit-title').value = data.title;
+                    document.getElementById('edit-content').value = data.content;
+                    // Показываем форму редактирования
+                    document.getElementById('edit-feed-form').style.display = 'block';
+                })
+                .catch(error => {
+                    console.error('Ошибка:', error);
+                });
+            });
+        });
+
+        // Обработка отмены редактирования
+        document.getElementById('cancel-edit').addEventListener('click', function() {
+            document.getElementById('edit-feed-form').style.display = 'none';
+        });
+
+        // Редактирование записи через AJAX
+        document.getElementById('edit-form').addEventListener('submit', function(event) {
+            event.preventDefault();
+            const form = event.target;
+            const formData = new FormData(form);
+            fetch(`/feed/${formData.get('feed_id')}/edit/`, {
+                method: form.method,
+                body: formData,
+                headers: {
+                    'X-CSRFToken': '{{ csrf_token }}',
+                },
+            })
+            .then(response => {
+                if (response.ok) {
+                    return response.json();
+                } else {
+                    throw new Error('Не удалось сохранить изменения записи.');
+                }
+            })
+            .then(data => {
+                if (data.success) {
+                    // Если сохранение успешно, обновляем содержимое записи на текущей странице
+                    const feedId = formData.get('feed_id');
+                    const feedElement = document.getElementById(`feed-${feedId}`);
+                    const titleElement = feedElement.querySelector('p:nth-child(1)');
+                    const contentElement = feedElement.querySelector('p:nth-child(2)');
+                    
+                    // Обновляем заголовок и содержимое записи
+                    titleElement.textContent = formData.get('title');
+                    contentElement.textContent = formData.get('content');
+            
+                    // Скрываем форму редактирования
+                    document.getElementById('edit-feed-form').style.display = 'none';
+                } else {
+                    // Если возникла ошибка, выводим сообщение об ошибке
+                    console.error('Ошибка:', data.error);
+                }
+            })
+        });
+
+        // Удаление записи через AJAX
+        document.querySelectorAll('.delete-feed-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const feedId = this.dataset.feedId;
+                if (confirm("Вы уверены, что хотите удалить эту запись?")) {
+                    fetch(`/feed/${feedId}/delete/`, {
+                        method: 'POST',
+                        headers: {
+                            'X-CSRFToken': '{{ csrf_token }}',
+                            'Content-Type': 'application/json',
+                        },
+                    })
+                    .then(response => {
+                        if (response.ok) {
+                            // Удаление записи из DOM после успешного удаления
+                            document.getElementById(`feed-${feedId}`).remove();
+                        } else {
+                            throw new Error('Не удалось удалить запись.');
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Ошибка:', error);
+                    });
+                }
+            });
+        });
+    </script>
+{% endblock %}
